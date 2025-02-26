@@ -16,25 +16,24 @@ Skript se spouští z příkazové řádky s dvěma argumenty:
 1. Název obce: Název obce, pro kterou chcete získat volební výsledky (např. "Praha").
 2. Výstupní soubor: Jméno výstupního souboru s příponou .csv (např. vysledky_Praha.csv).
 
-Příklad spuštění skriptu: python projekt_3.py Praha vysledky_Praha.csv
-_Tento příkaz stáhne volební výsledky pro obec "Praha" a uloží je do souboru vysledky.csv._
+_Příklad spuštění skriptu pro například Prahu: python projekt_3.py Praha vysledky_Praha.csv_
 
 # Funkce
 1. validate_arguments(args):
-Validuje argumenty zadání skriptu. 
-Očekává dva argumenty: název obce a jméno výstupního souboru s příponou .csv.
+_Validuje argumenty zadání skriptu. 
+Očekává dva argumenty: název obce a jméno výstupního souboru s příponou .csv._
 
 2. get_obec_url(base_url, obec):
-Vyhledá URL pro konkrétní obec na webu volby.cz.
+_Vyhledá URL pro konkrétní obec na webu volby.cz._
 
 3. scrape_okrsky(base_url):
-Získá všechny odkazy na volební okrsky pro zadanou obec.
+_Získá všechny odkazy na volební okrsky pro zadanou obec._
 
 4. scrape_results(okrsek_url):
-Stáhne a zpracuje výsledky voleb pro jeden volební okrsek.
+_Stáhne a zpracuje výsledky voleb pro jeden volební okrsek._
 
 5. save_to_csv(data, output_file):
-Uloží získaná data do CSV souboru.
+_Uloží získaná data do CSV souboru._
 
 # Požadavky
 1. Python 3.x
