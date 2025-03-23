@@ -1,46 +1,78 @@
-# Projekt 3: Scraping volebních výsledků pro kurz Datový analytik s Pythonem
-Tento Python skript slouží k získání volebních výsledků z webu [volby.cz]
-(https://www.volby.cz/pls/ps2017nss/ps3?xjazyk=CZ) pro konkrétní obec. 
-Skript vyhledá volební okrsky pro danou obec, stáhne výsledky hlasování a uloží je do CSV souboru.
+# 🗳️ Projekt 3: Scraping volebních výsledků  
+**Kurz Datový analytik s Pythonem**
 
-# Autor
-1. Jan Staněk 
-2. Email: rubadub@seznam.cz
+Tento Python skript slouží ke stažení a zpracování volebních výsledků z webu [volby.cz](https://www.volby.cz/pls/ps2017nss/ps3?xjazyk=CZ) pro zvolenou obec. Na základě zadaného názvu obce skript najde příslušné volební okrsky, získá výsledky hlasování a uloží je do CSV souboru.
 
-# Instalace
-1. Ujistěte se, že máte nainstalovaný Python 3.x.
-2. Nainstalujte potřebné knihovny pomocí pip: pip install requests beautifulsoup4 pandas
+---
 
-# Spuštění
-Skript se spouští z příkazové řádky s dvěma argumenty:
-1. Název obce: Název obce, pro kterou chcete získat volební výsledky (např. "Praha").
-2. Výstupní soubor: Jméno výstupního souboru s příponou .csv (např. vysledky_Praha.csv).
+## 👤 Autor  
+**Jan Staněk**  
+📧 Email: [rubadub@seznam.cz](mailto:rubadub@seznam.cz)
 
-_Příklad spuštění skriptu pro například Prahu: python projekt_3.py Praha vysledky_Praha.csv_
+---
 
-# Funkce
-1. validate_arguments(args):
-_Validuje argumenty zadání skriptu. 
-Očekává dva argumenty: název obce a jméno výstupního souboru s příponou .csv._
+## 🛠️ Instalace
 
-2. get_obec_url(base_url, obec):
-_Vyhledá URL pro konkrétní obec na webu volby.cz._
+1. Ujistěte se, že máte nainstalovaný **Python 3.x**
+2. Nainstalujte potřebné knihovny:
+```bash
+pip install requests beautifulsoup4 pandas
+```
 
-3. scrape_okrsky(base_url):
-_Získá všechny odkazy na volební okrsky pro zadanou obec._
+---
 
-4. scrape_results(okrsek_url):
-_Stáhne a zpracuje výsledky voleb pro jeden volební okrsek._
+## ▶️ Spuštění
 
-5. save_to_csv(data, output_file):
-_Uloží získaná data do CSV souboru._
+Skript spouštějte z příkazové řádky se dvěma argumenty:
 
-# Požadavky
-1. Python 3.x
-2. Knihovny: requests, beautifulsoup4, pandas
+```
+python projekt_3.py <název_obce> <výstupní_soubor.csv>
+```
 
-# Příklad výstupu
-Například záhlaví a první dva řádky CSV souboru pro obec Praha má vypadat takto:
-1. řádek (Záhlaví): code,location,registered,envelopes,valid,Občanská demokratická strana,Řád národa - Vlastenecká unie,CESTA ODPOVĚDNÉ SPOLEČNOSTI,Česká str.sociálně demokrat.,Volte Pr.Blok www.cibulka.net,Radostné Česko,STAROSTOVÉ A NEZÁVISLÍ,Komunistická str.Čech a Moravy,Strana zelených,"ROZUMNÍ-stop migraci,diktát.EU",Společ.proti výst.v Prok.údolí,Strana svobodných občanů,Blok proti islam.-Obran.domova,Občanská demokratická aliance,Česká pirátská strana,OBČANÉ 2011-SPRAVEDL. PRO LIDI,Unie H.A.V.E.L.,Referendum o Evropské unii,TOP 09,ANO 2011,Dobrá volba 2016,SPR-Republ.str.Čsl. M.Sládka,Křesť.demokr.unie-Čs.str.lid.,Česká strana národně sociální,REALISTÉ,SPORTOVCI,Dělnic.str.sociální spravedl.,Svob.a př.dem.-T.Okamura (SPD),Strana Práv Občanů
-2. řádek: 500054,Praha 1,21 556,14 145,14 036,2 770,9,13,657,12,1,774,392,514,41,6,241,14,44,2 332,5,0,12,2 783,1 654,1,7,954,3,133,11,2,617,34
-3. řádek 500224,Praha 10,79 964,52 238,51 895,8 137,40,34,3 175,50,17,2 334,2 485,1 212,230,15,1 050,35,67,9 355,9,8,30,6 497,10 856,37,53,2 398,12,477,69,53,2 998,162
+- `<název_obce>` — např. `Prostějov`
+- `<výstupní_soubor.csv>` — např. `vysledky_prostejov.csv`
+
+**Příklad:**
+```bash
+python projekt_3.py Prostějov vysledky_prostejov.csv
+```
+
+---
+
+## 🧩 Hlavní funkce skriptu
+
+| Funkce | Popis |
+|--------|-------|
+| `validate_arguments(args)` | Ověří správnost vstupních argumentů. |
+| `get_obec_url(base_url, obec)` | Najde odkaz pro konkrétní obec na webu volby.cz. |
+| `scrape_okrsky(obec_url)` | Získá seznam odkazů na volební okrsky pro obec. |
+| `scrape_results(okrsek_url)` | Hlavní orchestrátor pro zisk dat z okrsku (rozděleno do více funkcí). |
+| `extract_basic_info(soup, okrsek_url)` | Získá kód a název obce. |
+| `extract_voting_stats(soup)` | Získá počty voličů, obálek a platných hlasů. |
+| `extract_party_votes(soup)` | Získá hlasy pro jednotlivé strany. |
+| `save_to_csv(data, output_file)` | Uloží výsledky do CSV souboru. |
+
+---
+
+## 📦 Požadavky
+
+- Python 3.x  
+- Knihovny:  
+  - `requests`  
+  - `beautifulsoup4`  
+  - `pandas`
+
+---
+
+## 📊 Příklad výstupu
+
+Níže je ukázka struktury CSV výstupu (hlavička a dva řádky):
+
+| code   | location  | registered | envelopes | valid | Občanská demokratická strana | Česká pirátská strana | ANO 2011 | ... |
+|--------|-----------|------------|-----------|--------|-------------------------------|------------------------|----------|-----|
+| 500054 | Praha 1   | 21 556     | 14 145    | 14 036 | 2 770                         | 2 332                  | 2 617    | ... |
+| 500224 | Praha 10  | 79 964     | 52 238    | 51 895 | 8 137                         | 9 355                  | 2 998    | ... |
+
+> 🔎 Sloupce s názvy politických stran se mohou lišit dle obce a dostupných kandidujících subjektů.
+
+---
