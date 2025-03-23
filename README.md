@@ -26,7 +26,7 @@ pip install requests beautifulsoup4 pandas
 Skript spouštějte z příkazové řádky se dvěma argumenty:
 
 ```
-python projekt_3_v2.py <název_obce> <výstupní_soubor.csv>
+python projekt_3.py <název_obce> <výstupní_soubor.csv>
 ```
 
 - `<název_obce>` — např. `Prostějov`
@@ -34,7 +34,7 @@ python projekt_3_v2.py <název_obce> <výstupní_soubor.csv>
 
 **Příklad:**
 ```bash
-python projekt_3_v2.py Prostějov vysledky_prostejov.csv
+python projekt_3.py Prostějov vysledky_prostejov.csv
 ```
 
 ---

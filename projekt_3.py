@@ -9,15 +9,20 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+from typing import List, Dict, Tuple
 
-def validate_arguments(args): 
-    # Validuje argumenty zadané v příkazové řádku
+def validate_arguments(args: List[str]) -> Tuple[str, str]:
+    """
+    Ověří správnost argumentů zadaných v příkazovém řádku.
+    
+    :param args: Seznam argumentů z příkazové řádky.
+    :return: Název obce a jméno výstupního souboru.
+    """
     if len(args) != 3:
         print("Chyba: Zadejte přesně 2 argumenty - název obce a jméno výstupního souboru.")
         sys.exit(1)
 
-    obec = args[1]
-    output_file = args[2]
+    obec, output_file = args[1], args[2]
 
     if not output_file.endswith(".csv"):
         print("Chyba: Druhý argument musí být jméno souboru s příponou .csv.")
@@ -25,14 +30,30 @@ def validate_arguments(args):
 
     return obec, output_file
 
-def get_obec_url(base_url, obec):
-    # Najde URL pro  zadanou obec
-    response = requests.get(base_url)
-    if response.status_code != 200:
-        print(f"Chyba: Nepodařilo se připojit na URL {base_url} (status code {response.status_code}).")
-        sys.exit(1)
+def get_soup(session: requests.Session, url: str) -> BeautifulSoup:
+    """
+    Stáhne obsah stránky a vrátí jej jako objekt BeautifulSoup.
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    :param session: HTTP session pro efektivní opakované požadavky.
+    :param url: URL adresa stránky ke stažení.
+    :return: Objekt BeautifulSoup obsahující HTML stránky.
+    """
+    response = session.get(url)
+    if response.status_code != 200:
+        print(f"Chyba: Nepodařilo se připojit na URL {url} (status code {response.status_code}).")
+        sys.exit(1)
+    return BeautifulSoup(response.content, "html.parser")
+
+def get_obec_url(session: requests.Session, base_url: str, obec: str) -> str:
+    """
+    Najde URL stránky s výsledky pro zadanou obec.
+
+    :param session: HTTP session.
+    :param base_url: Základní URL volební stránky.
+    :param obec: Název obce.
+    :return: URL stránky s výsledky pro obec.
+    """
+    soup = get_soup(session, base_url)
     rows = soup.find_all("tr")
 
     for row in rows:
@@ -40,121 +61,132 @@ def get_obec_url(base_url, obec):
         if len(cells) > 0 and obec.lower() in cells[1].text.lower():
             link = cells[3].find("a")
             if link:
-                return_value="https://www.volby.cz/pls/ps2017nss/" + link["href"]
-                return return_value
+                return "https://www.volby.cz/pls/ps2017nss/" + link["href"]
 
     print(f"Chyba: Obec {obec} nebyla nalezena.")
     sys.exit(1)
 
-def scrape_okrsky(base_url):
-    # Scrapuje linky na všechny okrsky ze zadání základní URL
-    # print(base_url)
-    response = requests.get(base_url)
-    if response.status_code != 200:
-        print(f"Chyba: Nepodařilo se připojit na URL {base_url} (status code {response.status_code}).")
-        sys.exit(1)
+def scrape_okrsky(session: requests.Session, obec_url: str) -> List[str]:
+    """
+    Najde a vrátí seznam URL pro jednotlivé volební okrsky.
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    :param session: HTTP session.
+    :param obec_url: URL stránky obce.
+    :return: Seznam URL adres okrsků.
+    """
+    soup = get_soup(session, obec_url)
     tables = soup.find_all("table")
-    # print(f"DEBUG: Počet nalezených tabulek: {len(tables)}")
 
     okrsky = []
-
     for table in tables:
         rows = table.find_all("tr")
-        # print(f"DEBUG: Počet nalezených řádků v tabulce: {len(rows)}")
-
-        for i, row in enumerate(rows):
-        # print(f"DEBUG: Obsah řádku {i}: {row}")
+        for row in rows:
             link = row.find("a")
             if link and "xjazyk" in link["href"]:
                 okrsky.append("https://www.volby.cz/pls/ps2017nss/" + link["href"])
+
     if not okrsky:
         print("Chyba: Žádné odkazy na okrsky nebyly nalezeny.")
         sys.exit(1)
 
     return okrsky
 
+def extract_code(url: str) -> str:
+    """
+    Extrahuje kód obce z URL.
 
-def find_between(s, start, end):
-    return s.split(start)[1].split(end)[0]
-    # Doplňková funkce pro získání čísla obce do prvního sloupce výsledků v CSV
-    
-def scrape_results(okrsek_url):
-    """Scrapes election results for a single okrsek."""
-    # print(okrsek_url)
-    response = requests.get(okrsek_url)
-    # print(okrsek_url)
-    if response.status_code != 200:
-        print(f"Chyba: Nepodařilo se připojit na URL {okrsek_url} (status code {response.status_code}).")
-        sys.exit(1)
+    :param url: URL volebního okrsku.
+    :return: Číselný kód obce.
+    """
+    return url.split("&xobec=")[1].split("&")[0]
 
-    soup = BeautifulSoup(response.content, "html.parser")
+def extract_location(soup: BeautifulSoup) -> str:
+    """
+    Extrahuje název obce z HTML.
 
-    # Získání základních údajů o okrsku
-    header_table = soup.find_all("table")[0]
-        # print(header_table)
-    header_rows = header_table.find_all("tr")
-        # print(header_table)
-        # print(soup)
-        # print(header_rows[0].find_all("td"))
-    cislo_okrsku = find_between(okrsek_url,"&xobec=","&") # Vystřihuji z URL odkazu kód obce
-        # print(soup)
-        # print (soup.find_all("h3"))
-    nazev_okrsku_find = soup.find_all("h3")
-    for h3ky in nazev_okrsku_find:
-        if h3ky.text.strip()[0:4]=="Obec": nazev_okrsku=h3ky.text.strip()[6:] # Ošetřuje, když se liší počet nadpisů na stránce, z které získáván název obce (např. Praha)
-    # print(nazev_okrsku)
-    # print(nazev_okrsku)
-    # print(soup)
-    # Získání výsledků hlasování
-    results_table = soup.find_all("table")[0]
-    # rows = results_table.find_all("tr")[1:]
-    # print(results_table)
-    volici = results_table.find_all("td")[3].text.strip()
-    # print(volici)
-    obalky = results_table.find_all("td")[6].text.strip()
-    # print(obalky)
-    platne_hlasy = results_table.find_all("td")[7].text.strip()
-    # print(platne_hlasy)
-    kandidati = soup.find_all("tr")[5:]
-    strany = {}
-    for kandidat in kandidati:
-        cols = kandidat.find_all("td")
-        if len(cols)>0 and cols[1].text.strip()!='-': # Kontrola, aby neprobíhalo pro prázdný řádek tabulky výsledků (tj. když je stran méně než třicet)
-            strany[cols[1].text.strip()] = cols[2].text.strip()
-        # print(strany)
+    :param soup: Objekt BeautifulSoup obsahující HTML stránky.
+    :return: Název obce.
+    """
+    for h3 in soup.find_all("h3"):
+        if h3.text.strip().startswith("Obec"):
+            return h3.text.strip()[6:]
+    return ""
+
+def extract_basic_stats(soup: BeautifulSoup) -> Dict[str, str]:
+    """
+    Extrahuje základní volební statistiky (registrovaní voliči, vydané obálky, platné hlasy).
+
+    :param soup: Objekt BeautifulSoup obsahující HTML stránky.
+    :return: Slovník se základními statistikami.
+    """
+    table = soup.find_all("table")[0]
+    tds = table.find_all("td")
     return {
-        "code": cislo_okrsku,
-        "location": nazev_okrsku,
-        "registered": volici,
-        "envelopes": obalky,
-        "valid": platne_hlasy,
-        **strany
+        "registered": tds[3].text.strip(),
+        "envelopes": tds[6].text.strip(),
+        "valid": tds[7].text.strip()
     }
 
-def save_to_csv(data, output_file):
-    # Uloží data to CSV souboru
+def extract_parties(soup: BeautifulSoup) -> Dict[str, str]:
+    """
+    Extrahuje výsledky jednotlivých stran v okrsku.
+
+    :param soup: Objekt BeautifulSoup obsahující HTML stránky.
+    :return: Slovník s názvy stran a počty hlasů.
+    """
+    rows = soup.find_all("tr")[5:]
+    parties = {}
+    for row in rows:
+        cols = row.find_all("td")
+        if len(cols) > 2 and cols[1].text.strip() != '-':
+            party = cols[1].text.strip()
+            votes = cols[2].text.strip()
+            parties[party] = votes
+    return parties
+
+def scrape_results(session: requests.Session, okrsek_url: str) -> Dict[str, str]:
+    """
+    Stáhne a zpracuje výsledky voleb pro konkrétní okrsek.
+
+    :param session: HTTP session.
+    :param okrsek_url: URL stránky s výsledky pro daný okrsek.
+    :return: Slovník s výsledky voleb v okrsku.
+    """
+    soup = get_soup(session, okrsek_url)
+    return {
+        "code": extract_code(okrsek_url),
+        "location": extract_location(soup),
+        **extract_basic_stats(soup),
+        **extract_parties(soup)
+    }
+
+def save_to_csv(data: List[Dict[str, str]], output_file: str) -> None:
+    """
+    Uloží volební výsledky do CSV souboru.
+
+    :param data: Seznam slovníků obsahujících volební výsledky.
+    :param output_file: Název souboru pro uložení dat.
+    """
     df = pd.DataFrame(data)
     df.to_csv(output_file, index=False, encoding="utf-8-sig")
     print(f"Výsledky byly uloženy do souboru {output_file}.")
 
-if __name__ == "__main__":
-    base_url = "https://www.volby.cz/pls/ps2017nss/ps3?xjazyk=CZ"
+def main() -> Tuple[List[Dict[str, str]], str]:
+    """
+    Hlavní funkce, která spouští celý proces scraping a zpracování volebních dat.
 
-    # Validace argumentů
+    :return: Seznam výsledků a název výstupního souboru.
+    """
+    base_url = "https://www.volby.cz/pls/ps2017nss/ps3?xjazyk=CZ"
     obec, output_file = validate_arguments(sys.argv)
 
-    # Získání URL pro obec
-    obec_url = get_obec_url(base_url, obec)
+    with requests.Session() as session:
+        obec_url = get_obec_url(session, base_url, obec)
+        okrsky_urls = scrape_okrsky(session, obec_url)
+        results = [scrape_results(session, url) for url in okrsky_urls]
 
-    # Scraping okrsků
-    okrsky_urls = scrape_okrsky(obec_url)
+    return results, output_file
 
-    # Scraping výsledků
-    results = []
-    for okrsek_url in okrsky_urls:
-        results.append(scrape_results(okrsek_url))
-
-    # Uložení do CSV
+if __name__ == "__main__":
+    results, output_file = main()
     save_to_csv(results, output_file)
